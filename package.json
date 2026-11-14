@@ -1,0 +1,36 @@
+{
+  "name": "html2kindle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Send web essays (HTML) and PDFs to your Kindle from your phone",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "html2kindle": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "cli": "tsx src/cli.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.8",
+    "@mozilla/readability": "^0.6.0",
+    "hono": "^4.13.18",
+    "jsdom": "^31.0.1",
+    "jszip": "^3.10.2",
+    "nodemailer": "^10.5.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.6",
+    "@types/nodemailer": "^8.0.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
