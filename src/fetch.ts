@@ -79,6 +79,9 @@ export function isBlockedAddress(ip: string): boolean {
   return true;
 }
 
+/** Test seam: lets tests allow the loopback test server while keeping the checks for other hops. */
+export const _internals = { isBlocked: isBlockedAddress };
+
 function blockedError(): UserError {
   return new UserError('That address is not allowed (private or local network addresses are blocked)', 400);
 }
@@ -95,7 +98,7 @@ function rawGet(u: URL, cfg: Config, deadline: number): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
     const lib = u.protocol === 'https:' ? https : http;
     const hostname = u.hostname.replace(/^\[|\]$/g, '');
-    if (!cfg.allowPrivateHosts && net.isIP(hostname) && isBlockedAddress(hostname)) {
+    if (!cfg.allowPrivateHosts && net.isIP(hostname) && _internals.isBlocked(hostname)) {
       reject(blockedError());
       return;
     }
@@ -104,7 +107,7 @@ function rawGet(u: URL, cfg: Config, deadline: number): Promise<RawResponse> {
       dns.lookup(host, { ...(opts as dns.LookupOptions), all: true }, (err, addrs) => {
         const list = (addrs ?? []) as dns.LookupAddress[];
         if (err) return (cb as (e: Error | null, a?: unknown, f?: number) => void)(err);
-        if (!cfg.allowPrivateHosts && list.some((a) => isBlockedAddress(a.address))) {
+        if (!cfg.allowPrivateHosts && list.some((a) => _internals.isBlocked(a.address))) {
           return (cb as (e: Error | null) => void)(blockedError());
         }
         if (!list.length) return (cb as (e: Error | null) => void)(new Error(`No address for ${host}`));

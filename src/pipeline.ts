@@ -2,7 +2,7 @@ import type { Config } from './config.js';
 import { buildEpub } from './epub.js';
 import { extractArticle } from './extract.js';
 import { fetchSource, sourceFromUpload } from './fetch.js';
-import { sendToKindle } from './mailer.js';
+import { sendToKindle, type MailTransport } from './mailer.js';
 import { UserError, type Delivery, type KindleDocument, type SendRequest, type SendResult, type Source } from './types.js';
 
 async function resolveSource(req: SendRequest, cfg: Config): Promise<Source> {
@@ -41,11 +41,12 @@ export async function handleSend(
   req: SendRequest,
   delivery: Delivery,
   cfg: Config,
+  transport?: MailTransport,
 ): Promise<{ result: SendResult; doc: KindleDocument }> {
   const doc = await prepareDocument(req, cfg);
   const result: SendResult = { ok: true, title: doc.title, filename: doc.filename, bytes: doc.data.length, delivery };
   if (delivery === 'email') {
-    const { messageId } = await sendToKindle(doc, cfg);
+    const { messageId } = await sendToKindle(doc, cfg, transport);
     result.messageId = messageId;
   }
   return { result, doc };

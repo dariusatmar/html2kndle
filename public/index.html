@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Send to Kindle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#faf8f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161513" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kindle">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{--bg:#faf8f4;--fg:#222;--muted:#6b665e;--line:#d9d4c9;--card:#fff;--accent:#2f5d50;--accent-fg:#fff;--err:#a3321f;--ok:#2f5d50}
+@media (prefers-color-scheme:dark){:root{--bg:#161513;--fg:#e8e4dc;--muted:#9a948a;--line:#38352f;--card:#1f1d1a;--accent:#7fb5a2;--accent-fg:#102018;--err:#f08a74;--ok:#7fb5a2}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.5 Georgia,"Iowan Old Style",serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+main{max-width:34rem;margin:0 auto;padding:28px 20px 48px}
+h1{font-size:1.6rem;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 28px;font-size:.95rem}
+label{display:block;font:600 .8rem/1 system-ui,-apple-system,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 8px}
+input[type=text],input[type=url],input[type=password]{width:100%;min-height:48px;padding:12px 14px;font:16px system-ui,-apple-system,sans-serif;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;appearance:none}
+input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px}
+.row input{flex:1;min-width:0}
+button,.filebtn{font:600 16px system-ui,-apple-system,sans-serif;min-height:48px;padding:0 18px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);width:100%;min-height:54px;font-size:17px}
+button.secondary{width:100%;min-height:54px;font-size:17px}
+button:disabled{opacity:.55;cursor:default}
+.actions{display:grid;gap:10px;margin-top:26px}
+.file{display:flex;align-items:center;gap:12px}
+.file input{display:none}
+.fname{color:var(--muted);font:.9rem system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.link{background:none;border:0;min-height:0;padding:4px 0;color:var(--muted);font-weight:400;text-decoration:underline}
+#status{margin-top:24px;padding:14px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:.95rem/1.45 system-ui,-apple-system,sans-serif;display:none}
+#status.show{display:block}
+#status.err{border-color:var(--err);color:var(--err)}
+#status.ok{border-color:var(--ok)}
+#status .t{display:block;font:600 1.05rem/1.3 Georgia,serif;color:var(--fg);margin-top:4px}
+#status.busy::before{content:"";display:inline-block;width:.9em;height:.9em;border:2px solid var(--muted);border-top-color:transparent;border-radius:50%;margin-right:8px;vertical-align:-2px;animation:s 0.8s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#status.busy::before{animation:none}}
+details{margin-top:28px;color:var(--muted);font:.9rem system-ui,sans-serif}
+summary{cursor:pointer;min-height:32px}
+</style>
+</head>
+<body>
+<main>
+<h1>Send to Kindle</h1>
+<p class="sub">Paste an article or PDF link, or choose a file.</p>
+
+<form id="form" autocomplete="off">
+  <label for="url">Page or PDF link</label>
+  <div class="row">
+    <input id="url" type="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://example.com/essay">
+    <button type="button" id="paste" hidden>Paste</button>
+  </div>
+
+  <label for="file">Or a file</label>
+  <div class="file">
+    <label class="filebtn" for="file" style="margin:0;text-transform:none;letter-spacing:0;font-size:16px;color:var(--fg)">Choose file</label>
+    <input id="file" type="file" accept=".pdf,.html,.htm,.epub,application/pdf,text/html,application/epub+zip">
+    <span class="fname" id="fname">PDF, HTML or EPUB</span>
+    <button type="button" class="link" id="clearfile" hidden>Clear</button>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="primary" id="send">Send to Kindle</button>
+    <button type="button" class="secondary" id="dl">Download EPUB</button>
+  </div>
+</form>
+
+<div id="status" role="status" aria-live="polite"></div>
+
+<details id="settings">
+  <summary>Access token</summary>
+  <label for="token">Token</label>
+  <input id="token" type="password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Saved on this device only">
+</details>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){return document.getElementById(id)};
+  var urlEl=$('url'), fileEl=$('file'), tokenEl=$('token'), statusEl=$('status');
+  var sendBtn=$('send'), dlBtn=$('dl'), pasteBtn=$('paste'), clearBtn=$('clearfile');
+  var KEY='h2k_token';
+
+  // Token: read once from #token=..., store, and scrub from the address bar.
+  try {
+    var m=/[#&]token=([^&]*)/.exec(location.hash);
+    if(m){ localStorage.setItem(KEY, decodeURIComponent(m[1])); history.replaceState(null,'',location.pathname+location.search); }
+    tokenEl.value=localStorage.getItem(KEY)||'';
+  } catch(e){}
+  tokenEl.addEventListener('change',function(){ try{localStorage.setItem(KEY,tokenEl.value.trim())}catch(e){} });
+
+  var q=new URLSearchParams(location.search);
+  if(q.get('url')) urlEl.value=q.get('url');
+  else if(q.get('text')&&/^https?:\/\//i.test(q.get('text'))) urlEl.value=q.get('text');
+
+  if(navigator.clipboard && navigator.clipboard.readText){
+    pasteBtn.hidden=false;
+    pasteBtn.addEventListener('click',function(){
+      navigator.clipboard.readText().then(function(t){ if(t) urlEl.value=t.trim(); }).catch(function(){ show('err','Clipboard access was blocked. Paste into the field instead.'); });
+    });
+  }
+
+  fileEl.addEventListener('change',function(){
+    var f=fileEl.files&&fileEl.files[0];
+    $('fname').textContent=f?f.name:'PDF, HTML or EPUB';
+    clearBtn.hidden=!f;
+  });
+  clearBtn.addEventListener('click',function(){ fileEl.value=''; fileEl.dispatchEvent(new Event('change')); });
+
+  function show(kind,msg,title){
+    statusEl.className='show '+kind;
+    statusEl.textContent='';
+    var s=document.createElement('span'); s.textContent=msg; statusEl.appendChild(s);
+    if(title){ var t=document.createElement('span'); t.className='t'; t.textContent=title; statusEl.appendChild(t); }
+  }
+  function busy(on,msg){
+    sendBtn.disabled=dlBtn.disabled=on;
+    if(on) show('busy',msg);
+  }
+
+  function build(delivery){
+    var fd=new FormData();
+    var u=urlEl.value.trim(), f=fileEl.files&&fileEl.files[0];
+    if(!u&&!f){ throw new Error('Enter a link or choose a file first.'); }
+    if(f) fd.append('file',f,f.name); else fd.append('url',u);
+    fd.append('delivery',delivery);
+    return fd;
+  }
+  function headers(){
+    var h={'Accept':'application/json'}, t=tokenEl.value.trim();
+    if(t) h['Authorization']='Bearer '+t;
+    return h;
+  }
+  function errMsg(res){
+    return res.text().then(function(txt){
+      try{ var j=JSON.parse(txt); if(j&&j.error) return j.error; }catch(e){}
+      if(res.status===401) return 'Unauthorized. Check the access token below.';
+      return 'Request failed ('+res.status+').';
+    });
+  }
+
+  $('form').addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var body; try{ body=build('email'); }catch(e){ show('err',e.message); return; }
+    try{localStorage.setItem(KEY,tokenEl.value.trim())}catch(e){}
+    busy(true,'Fetching and sending...');
+    fetch('/api/send',{method:'POST',headers:headers(),body:body}).then(function(res){
+      if(!res.ok) return errMsg(res).then(function(m){ throw new Error(m); });
+      return res.json().then(function(j){ show('ok','Sent to your Kindle.',j.title); });
+    }).catch(function(e){ show('err',e.message||'Something went wrong.'); }).then(function(){ busy(false); });
+  });
+
+  function filenameFrom(res){
+    var cd=res.headers.get('Content-Disposition')||'';
+    var m=/filename\*=UTF-8''([^;]+)/i.exec(cd); if(m){ try{return decodeURIComponent(m[1]);}catch(e){} }
+    m=/filename="([^"]+)"/i.exec(cd); return m?m[1]:'article.epub';
+  }
+  function titleFrom(res,name){
+    var t=res.headers.get('X-Document-Title');
+    if(t){ try{return decodeURIComponent(t);}catch(e){} }
+    return name;
+  }
+
+  dlBtn.addEventListener('click',function(){
+    var body; try{ body=build('download'); }catch(e){ show('err',e.message); return; }
+    try{localStorage.setItem(KEY,tokenEl.value.trim())}catch(e){}
+    busy(true,'Building EPUB...');
+    var name, title, blob;
+    fetch('/api/send',{method:'POST',headers:headers(),body:body}).then(function(res){
+      if(!res.ok) return errMsg(res).then(function(m){ throw new Error(m); });
+      name=filenameFrom(res); title=titleFrom(res,name);
+      return res.blob();
+    }).then(function(b){
+      blob=new Blob([b],{type:b.type||'application/epub+zip'});
+      var file;
+      try{ file=new File([blob],name,{type:blob.type}); }catch(e){}
+      var canShare=file&&navigator.canShare&&navigator.share&&navigator.canShare({files:[file]});
+      var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href)},30000);
+      show('ok','Downloaded '+name+'.',title);
+      if(canShare){
+        var btn=document.createElement('button'); btn.type='button'; btn.className='secondary'; btn.style.marginTop='12px';
+        btn.textContent='Share to Kindle app';
+        btn.addEventListener('click',function(){ navigator.share({files:[file],title:title}).catch(function(){}); });
+        statusEl.appendChild(btn);
+      }
+    }).catch(function(e){ show('err',e.message||'Something went wrong.'); }).then(function(){ busy(false); });
+  });
+})();
+</script>
+</body>
+</html>
