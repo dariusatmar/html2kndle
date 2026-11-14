@@ -167,6 +167,8 @@ All variables are read from the environment. See [.env.example](.env.example) fo
 - Scanned PDFs are not OCR'd, so they have no searchable text.
 - PDFs are sent unchanged. Kindle shows them as fixed-layout pages.
 - Attachment size is limited by your SMTP provider, commonly about 25 MB. `MAX_BYTES` also caps input size.
+- The server fetches pages directly and ignores `HTTP_PROXY` / `HTTPS_PROXY`, so it needs direct outbound internet access.
+- Some sites block requests from server IP addresses. The page-HTML variant avoids this as well.
 
 ## Security notes
 

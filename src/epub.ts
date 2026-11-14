@@ -126,7 +126,7 @@ ${bodyXhtml}
   });
 
   return {
-    filename: `${slugify(title)}.epub`,
+    filename: `${slugify(cleanText(article.title))}.epub`,
     contentType: 'application/epub+zip',
     data,
     title,

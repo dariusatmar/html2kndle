@@ -125,7 +125,7 @@ export function createApp(cfg: Config): Hono {
       const delivery: Delivery = (requested as Delivery | undefined) ?? (canEmail ? 'email' : 'download');
       if (delivery === 'email' && !canEmail) {
         throw new UserError(
-          'Email delivery is not configured. Set KINDLE_EMAIL, FROM_EMAIL and SMTP_HOST/SMTP_USER/SMTP_PASS on the server, or use delivery=download.',
+          'Email delivery is not configured. Set KINDLE_EMAIL, FROM_EMAIL and SMTP_HOST/SMTP_USER/SMTP_PASS on the server, or download the file instead (delivery=download).',
           503,
         );
       }
